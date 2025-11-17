@@ -8,10 +8,7 @@ import pandas as pd
 
 np.random.seed(0)
 
-# ---------------------- Pomocnicze funkcje ----------------------
-
 def is_dominated(v, V):
-    """Sprawdza, czy wektor v jest zdominowany przez dowolny wektor w V (minimizacja)."""
     for u in V:
         if np.all(u <= v) and np.any(u < v):
             return True
@@ -19,7 +16,6 @@ def is_dominated(v, V):
 
 
 def nondominated_set(V):
-    """Zwraca listę punktów niedominowanych (macierz NxM: wiersze = punkty)."""
     V = np.asarray(V)
     if V.size == 0:
         return np.empty((0, V.shape[1] if V.ndim>1 else 1))
@@ -31,13 +27,9 @@ def nondominated_set(V):
     return np.array(nd)
 
 
-# ---------------------- PrzykÅadowe funkcje celu ----------------------
-# Tutaj można podmieniÄ funkcje F_obj i G_obj na zadane przez prowadzącego/grupÄ.
 
 def F_obj(x):
-    """Dwukryterialny przykład F: R^2 -> R^2 (nieliniowy, moÅ¼na zastÄpiÄ).
-    x: array-like, len=2
-    Zwraca: array([F1,F2])"""
+    # Dwukryterialny przykład F: R^2 -> R^2
     x1, x2 = x
     f1 = (x1 - 0.3)**2 + 0.5*(x2 + 0.2)**2 + 0.3*x1*x2 + 0.1*(x1**3)
     f2 = (x1 + 0.4)**2 + 0.7*(x2 - 0.1)**2 + 0.2*np.sin(3*x1) + 0.05*(x2**3)
@@ -45,9 +37,7 @@ def F_obj(x):
 
 
 def G_obj(x):
-    """Trzykryterialny przykład G: R^3 -> R^3 (przynajmniej jedno kryterium nieliniowe).
-    x: array-like, len=3
-    Zwraca: array([G1,G2,G3])"""
+    # Trzykryterialny przykład G: R^3 -> R^3
     x1, x2, x3 = x
     g1 = (x1 - 0.2)**2 + 0.4*(x2 + 0.1)**2 + 0.2*(x3**2)
     g2 = (x1 + 0.3)**2 + 0.5*(x2 - 0.3)**2 + 0.3*np.sin(2*x3)
@@ -55,15 +45,12 @@ def G_obj(x):
     return np.array([g1, g2, g3])
 
 
-# ---------------------- Parametry dziedziny ----------------------
-# U = [-1,1]^n (moÅ¼na zastÄpiÄ koÅem lub innym zbiorem poprzez dodatkowe ograniczenia)
-
+# Parametry dziedziny
 bounds_2d = [(-1.0, 1.0), (-1.0, 1.0)]
 bounds_3d = [(-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0)]
 
 
-# ---------------------- Próbkowanie dziedziny ----------------------
-
+# Próbkowanie dziedziny
 def sample_objectives(obj_fun, bounds, n_samples=3000):
     dim = len(bounds)
     lo = np.array([b[0] for b in bounds])
@@ -73,11 +60,9 @@ def sample_objectives(obj_fun, bounds, n_samples=3000):
     return X, Y
 
 
-# ---------------------- Metody skalaryzacji ----------------------
-
+# Metody skalaryzacji
 def scalarize_S1_weighted_sum(obj_fun, bounds, lambdas, n_restarts=5):
-    """S1: liniowa suma wag. lambdas: lista wektorÃ³w wag (nie muszÄ byÄ znormalizowane).
-    Zwraca listÄ par (x, F(x))."""
+    # S1: liniowa suma wag.
     solutions = []
     lo = np.array([b[0] for b in bounds])
     hi = np.array([b[1] for b in bounds])
@@ -102,9 +87,7 @@ def scalarize_S1_weighted_sum(obj_fun, bounds, lambdas, n_restarts=5):
 
 
 def scalarize_S2_epsilon_constraints(obj_fun, bounds, main_index, epsilons, n_restarts=3):
-    """S2: epsilon-ograniczenia. main_index: indeks celu minimalizowanego.
-    epsilons: iterable - dla 2-objekt. lista skalarÃ³w (gdy nobj=2) lub dla nobj>2 lista krotek.
-    Zwraca listÄ par (x, F(x))."""
+    # S2: epsilon-ograniczenia. main_index: indeks celu minimalizowanego.
     solutions = []
     lo = np.array([b[0] for b in bounds])
     hi = np.array([b[1] for b in bounds])
@@ -140,8 +123,7 @@ def scalarize_S2_epsilon_constraints(obj_fun, bounds, main_index, epsilons, n_re
 
 
 def scalarize_S3_distance(obj_fun, bounds, ref_point, p=2, n_restarts=5):
-    """S3: minimalizacja odlegÅoÅci ||F(x)-ref||_{p}.
-    p moÅ¼e byÄ np. 1, 2 lub float('inf')."""
+    # S3: minimalizacja odległości
     lo = np.array([b[0] for b in bounds])
     hi = np.array([b[1] for b in bounds])
     def norm_diff(x):
@@ -162,7 +144,7 @@ def scalarize_S3_distance(obj_fun, bounds, ref_point, p=2, n_restarts=5):
     return sols
 
 
-# ---------------------- GÅówna procedura eksperymentalna ----------------------
+# Eksperymenty
 
 def run_bi_objective_experiment():
     print('--- DWUKRYTERIALNY (F) ---')
@@ -171,7 +153,7 @@ def run_bi_objective_experiment():
     nadir2 = np.max(Y2, axis=0)
     print('Est. ideal:', ideal2, 'nadir:', nadir2)
 
-    # S1: siatka wag (normalizujemy wagi)
+    # S1: siatka wag (normalizacja wag)
     n_weights = 40
     weights = []
     for k in range(n_weights+1):
@@ -180,13 +162,13 @@ def run_bi_objective_experiment():
         weights.append([w1, w2])
     sols_S1 = scalarize_S1_weighted_sum(F_obj, bounds_2d, weights)
 
-    # S2: epsilon-ograniczenia (min F1 subject to F2 <= eps, i odwrotnie)
+    # S2: epsilon-ograniczenia
     eps_values_12 = np.linspace(np.min(Y2[:,1]), np.max(Y2[:,1]), 30)
     sols_S2 = scalarize_S2_epsilon_constraints(F_obj, bounds_2d, main_index=0, epsilons=eps_values_12)
     eps_values_21 = np.linspace(np.min(Y2[:,0]), np.max(Y2[:,0]), 30)
     sols_S2 += scalarize_S2_epsilon_constraints(F_obj, bounds_2d, main_index=1, epsilons=eps_values_21)
 
-    # S3: minimalizacja odlegÅoÅci do punktu idealnego (p=2 i p=inf)
+    # S3: minimalizacja odlegóości do punktu idealnego
     sols_S3 = []
     sols_S3 += scalarize_S3_distance(F_obj, bounds_2d, ideal2, p=2)
     sols_S3 += scalarize_S3_distance(F_obj, bounds_2d, ideal2, p=float('inf'))
@@ -209,7 +191,6 @@ def run_bi_objective_experiment():
         plt.scatter(Pts_S3[:,0], Pts_S3[:,1], marker='^', label='S3 solutions')
 
     if pareto.size>0:
-        # sortowanie po F1 do rysowania splajnu
         pf = pareto[np.argsort(pareto[:,0])]
         try:
             tck, u = splprep([pf[:,0], pf[:,1]], s=1.0)
@@ -225,7 +206,6 @@ def run_bi_objective_experiment():
     plt.savefig('output/pareto_bi_plot.png', dpi=200)
     plt.show()
 
-    # Zapis wyników
     df_bi = pd.DataFrame(pareto, columns=['F1','F2']) if pareto.size>0 else pd.DataFrame(columns=['F1','F2'])
     df_bi.to_csv('output/pareto_bi.csv', index=False)
     print('Zapisano output/pareto_bi.csv i output/pareto_bi_plot.png')
@@ -234,7 +214,7 @@ def run_bi_objective_experiment():
 
 
 def run_tri_objective_experiment():
-    print('--- TRZYKRYTERIALNY (G) ---')
+    print('--- TRZYKRYTERIALNY ---')
     X3, Y3 = sample_objectives(G_obj, bounds_3d, n_samples=5000)
     ideal3 = np.min(Y3, axis=0)
     nadir3 = np.max(Y3, axis=0)
@@ -261,7 +241,7 @@ def run_tri_objective_experiment():
         eps_list = [tuple(g) for g in grid]
         sols_S2 += scalarize_S2_epsilon_constraints(G_obj, bounds_3d, main_index=main, epsilons=eps_list)
 
-    # S3: minimalizacja odlegÅoÅci do punktu idealnego
+    # S3: minimalizacja odległości do punktu idealnego
     sols_S3 = scalarize_S3_distance(G_obj, bounds_3d, ideal3, p=2)
 
     Pts_S1 = np.array([y for (x,y) in sols_S1]) if sols_S1 else np.empty((0,3))
@@ -271,7 +251,7 @@ def run_tri_objective_experiment():
     all_pts = np.vstack([p for p in (Pts_S1, Pts_S2, Pts_S3) if p.size>0]) if any(p.size>0 for p in (Pts_S1, Pts_S2, Pts_S3)) else np.empty((0,3))
     pareto = nondominated_set(all_pts) if all_pts.size>0 else np.empty((0,3))
 
-    # Wizualizacja 3D + projekcje par osi
+    # Wizualizacja
     fig = plt.figure(figsize=(10,8))
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(Y3[:,0], Y3[:,1], Y3[:,2], s=6, alpha=0.4)
@@ -294,9 +274,6 @@ def run_tri_objective_experiment():
     print('Zapisano output/pareto_tri.csv i output/pareto_tri_plot.png')
 
     return df_tri
-
-
-# ---------------------- Funkcja pomocnicza: uruchom wszystko ----------------------
 
 def main():
     os.makedirs('output', exist_ok=True)
